@@ -1,0 +1,27 @@
+{
+  "Culture": "en",
+  "Texts": {
+    "Menu:Home": "Home",
+    "Welcome": "Welcome",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information, visit abp.io.",
+    "Menu:Product Management": "Product Management",
+    "Menu:Products": "Products",
+    "Actions": "Actions",
+    "Close": "Close",
+    "Delete": "Delete",
+    "Edit": "Edit",
+    "PublishDate": "Publish date",
+    "NewProduct": "New Product",
+    "Name": "Name",
+    "ProductType": "productType",
+    "Price": "Price",
+    "CreationTime": "Creation time",
+    "AreYouSure": "Are you sure?",
+    "AreYouSureToDelete": "Are you sure you want to delete this item?",
+    "Enum:BookType.0": "Mobiles",
+    "Enum:BookType.1": "Earphones",
+    "Enum:BookType.2": "PowerBanks",
+    "Enum:BookType.3": "Undefined",
+    
+  }
+}
