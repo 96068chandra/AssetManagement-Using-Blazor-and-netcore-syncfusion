@@ -22,6 +22,11 @@
     "Enum:BookType.1": "Earphones",
     "Enum:BookType.2": "PowerBanks",
     "Enum:BookType.3": "Undefined",
-    
+    "Permission:AssetManagement": "Asset Management",
+    "Permission:Products": "Products Management",
+    "Permission:Products.Create": "Creating new products",
+    "Permission:Products.Edit": "Editing the products",
+    "Permission:Products.Delete": "Deleting the Products"
+
   }
 }

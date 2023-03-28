@@ -32,6 +32,20 @@
                   ShowPager="true"
                   PageSize="PageSize">
             <DataGridColumns>
+                <DataGridEntityActionsColumn TItem="ProductDto" @ref="@EntityActionsColumn">
+                    <DisplayTemplate>
+                        <EntityActions TItem="ProductDto" EntityActionsColumn="@EntityActionsColumn">
+                            <EntityAction TItem="ProductDto"
+                                          Text="@L["Edit"]"
+                                          Clicked="() => OpenEditModalAsync(context)" />
+                            <EntityAction TItem="ProductDto"
+                                          Text="@L["Delete"]"
+                                          Clicked="() => DeleteEntityAsync(context)"
+                                          ConfirmationMessage="() => GetDeleteConfirmationMessage(context)" />
+
+                        </EntityActions>
+                    </DisplayTemplate>
+                </DataGridEntityActionsColumn>
                 <DataGridColumn TItem="ProductDto"
                                 Field="@nameof(ProductDto.Name)"
                                 Caption="@L["Name"]"> </DataGridColumn>
@@ -66,6 +80,11 @@
         </DataGrid>
     </CardBody>
 </Card>
+
+
+
+
+@*Create*@
 <Modal @ref="@CreateModal">
     <ModalBackdrop />
     <ModalContent IsCentered="true">
@@ -98,10 +117,17 @@
                             }
                         </Select>
                     </Field>
-                    <Field>
-                        <FieldLabel>@L["Description"]</FieldLabel>
-                        <TextEdit @bind-Value="NewEntity.Description" />
-                    </Field>
+                    <Validation MessageLocalizer="@LH.Localize">
+                        <Field>
+                            <FieldLabel>@L["Description"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewEntity.Description">
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+                    
                     <Field>
                         <FieldLabel>@L["Price"]</FieldLabel>
                         <NumericEdit TValue="float" @bind-Value="NewEntity.Price" />
@@ -119,6 +145,71 @@
                         Clicked="CreateEntityAsync">
                     @L["Save"]
                 </Button>
+            </ModalFooter>
+        </Form>
+    </ModalContent>
+</Modal>
+
+
+                @*Edit Model*@
+
+
+<Modal @ref="@EditModal">
+    <ModalBackdrop />
+    <ModalContent IsCentered="true">
+        <Form>
+            <ModalHeader>
+                <ModalTitle>@EditingEntity.Name</ModalTitle>
+                <CloseButton Clicked="CloseEditModalAsync"/>
+            </ModalHeader>
+            <ModalBody>
+                <Validations @ref="@EditValidationsRef" Model="@NewEntity" ValidateOnLoad="false">
+                    <Validation MessageLocalizer="@LH.Localize">
+                        <Field>
+                            <FieldLabel>@L["Name"]</FieldLabel>
+                            <TextEdit @bind-Text="@EditingEntity.Name">
+                                <Feedback>
+                                    <ValidationError/>
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+                    <Field>
+                        <FieldLabel>@L["ProductType"]</FieldLabel>
+                        <Select TValue="ProductType" @bind-SelectedValue="@EditingEntity.productType">
+                            @foreach (var productTypeValue in Enum.GetValues(typeof(ProductType)))
+                            {
+                                <SelectItem TValue="ProductType" Value="@((ProductType)productTypeValue)">
+                                    @L[$"{productTypeValue}"]
+
+                                </SelectItem>
+                            }
+                        </Select>
+                    </Field>
+                    <Validation MessageLocalizer="@LH.Localize">
+                        <Field>
+                            <FieldLabel>@L["Description"]</FieldLabel>
+                            <TextEdit @bind-Text="@NewEntity.Description">
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+                    
+                    <Field>
+                        <FieldLabel>@L["Price"]</FieldLabel>
+                        <NumericEdit TValue="float" @bind-Value="EditingEntity.Price"/>
+                    </Field>
+                </Validations>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary"
+                        Clicked="CloseEditModalAsync">@L["Cancel"]</Button>
+                <Button Color="Color.Primary"
+                        Type="@ButtonType.Submit"
+                        PreventDefaultOnSubmit="true"
+                        Clicked="UpdateEntityAsync">@L["Save"]</Button>
             </ModalFooter>
         </Form>
     </ModalContent>
