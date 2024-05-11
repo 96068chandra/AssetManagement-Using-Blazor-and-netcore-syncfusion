@@ -1,14 +1,19 @@
-﻿
 @page "/products"
 @using Volo.Abp.Application.Dtos
 @using AssetManagement.Products
 @using AssetManagement.Localization
 @using Microsoft.Extensions.Localization
+@using System.Linq
 @inject IStringLocalizer<AssetManagementResource> L
 @inject AbpBlazorMessageLocalizerHelper<AssetManagementResource> LH
+@inject IJSRuntime JSRuntime
+@imports "ant-design-vue"
 
-@inherits AbpCrudPageBase<IProductAppService,ProductDto,Guid,PagedAndSortedResultRequestDto,CreataUpdateProductDto>
-
+<style>
+    .ant-data-grid-content {
+        height: 600px;
+    }
+</style>
 
 <Card>
     <CardHeader>
@@ -18,7 +23,7 @@
             </Column>
             <Column ColumnSize="ColumnSize.IsAuto">
                 <Button Color="Color.Primary"
-                        Clicked="OpenCreateModalAsync">
+                        Clicked="@OpenCreateModalAsync">
                     @L["NewProduct"]
                 </Button>
             </Column>
@@ -27,7 +32,7 @@
 
     <CardBody>
         <DataGrid TItem="ProductDto" Data="Entities"
-                  ReadData="OnDataGridReadAsync"
+                  ReadData="@OnDataGridReadAsync"
                   TotalItems="TotalCount"
                   ShowPager="true"
                   PageSize="PageSize">
@@ -37,11 +42,11 @@
                         <EntityActions TItem="ProductDto" EntityActionsColumn="@EntityActionsColumn">
                             <EntityAction TItem="ProductDto"
                                           Text="@L["Edit"]"
-                                          Clicked="() => OpenEditModalAsync(context)" />
+                                          Clicked="@(() => OpenEditModalAsync(context))" />
                             <EntityAction TItem="ProductDto"
                                           Text="@L["Delete"]"
-                                          Clicked="() => DeleteEntityAsync(context)"
-                                          ConfirmationMessage="() => GetDeleteConfirmationMessage(context)" />
+                                          Clicked="@(() => DeleteEntityAsync(context))"
+                                          ConfirmationMessage="@(() => GetDeleteConfirmationMessage(context))" />
 
                         </EntityActions>
                     </DisplayTemplate>
@@ -57,7 +62,7 @@
                 </DataGridColumn>
                 <DataGridColumn TItem="ProductDto"
                                 Field="@nameof(ProductDto.productType)"
-                                Caption="@L["productType"]">
+                                Caption="@L["ProductType"]">
                     <DisplayTemplate>
                         @L[$"{context.productType}"]
                     </DisplayTemplate>
@@ -81,136 +86,196 @@
     </CardBody>
 </Card>
 
-
-
-
-@*Create*@
-<Modal @ref="@CreateModal">
-    <ModalBackdrop />
-    <ModalContent IsCentered="true">
-        <Form>
-            <ModalHeader>
-                <ModalTitle>@L["NewBook"]</ModalTitle>
-                <CloseButton Clicked="CloseCreateModalAsync" />
-            </ModalHeader>
-            <ModalBody>
-                <Validations @ref="@CreateValidationsRef" Model="@NewEntity" ValidateOnLoad="false">
-                    <Validation MessageLocalizer="@LH.Localize">
+@if (CreateModalRef is not null)
+{
+    <Modal @ref="@CreateModalRef">
+        <ModalBackdrop />
+        <ModalContent IsCentered="true">
+            <Form>
+                <ModalHeader>
+                    <ModalTitle>@L["NewProduct"]</ModalTitle>
+                    <CloseButton Clicked="@CloseCreateModalAsync" />
+                </ModalHeader>
+                <ModalBody>
+                    <Validations @ref="@CreateValidationsRef" Model="@NewEntity" ValidateOnLoad="false">
+                        <Validation MessageLocalizer="@LH.Localize">
+                            <Field>
+                                <FieldLabel>@L["Name"]</FieldLabel>
+                                <TextEdit @bind-Text="@NewEntity.Name">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Field>
+                        </Validation>
                         <Field>
-                            <FieldLabel>@L["Name"]</FieldLabel>
-                            <TextEdit @bind-Text="@NewEntity.Name">
-                                <Feedback>
-                                    <ValidationError />
-                                </Feedback>
-                            </TextEdit>
-                        </Field>
-                    </Validation>
-                    <Field>
-                        <FieldLabel>@L["productType"]</FieldLabel>
-                        <Select TValue="ProductType" @bind-SelectedValue="@NewEntity.productType">
-                            @foreach (var productTypeValue in Enum.GetValues(typeof(ProductType)))
-                            {
-                                <SelectItem TValue="ProductType" Value="@((ProductType)productTypeValue)">
-                                    @L[$"{productTypeValue}"]
+                            <FieldLabel>@L["ProductType"]</FieldLabel>
+                            <Select TValue="ProductType" @bind-SelectedValue="@NewEntity.productType">
+                                @foreach (var productTypeValue in Enum.GetValues(typeof(ProductType)))
+                                {
+                                    <SelectItem TValue="ProductType" Value="@((ProductType)productTypeValue)">
+                                        @L[$"{productTypeValue}"]
 
-                                </SelectItem>
-                            }
-                        </Select>
-                    </Field>
-                    <Validation MessageLocalizer="@LH.Localize">
+                                    </SelectItem>
+                                }
+                            </Select>
+                        </Field>
+                        <Validation MessageLocalizer="@LH.Localize">
+                            <Field>
+                                <FieldLabel>@L["Description"]</FieldLabel>
+                                <TextEdit @bind-Text="@NewEntity.Description">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Field>
+                        </Validation>
+
                         <Field>
-                            <FieldLabel>@L["Description"]</FieldLabel>
-                            <TextEdit @bind-Text="@NewEntity.Description">
-                                <Feedback>
-                                    <ValidationError />
-                                </Feedback>
-                            </TextEdit>
+                            <FieldLabel>@L["Price"]</FieldLabel>
+                            <NumericEdit TValue="float" @bind-Value="@NewEntity.Price" @bind-Value:event="oninput" />
                         </Field>
-                    </Validation>
-                    
-                    <Field>
-                        <FieldLabel>@L["Price"]</FieldLabel>
-                        <NumericEdit TValue="float" @bind-Value="NewEntity.Price" />
-                    </Field>
-                 </Validations>
-            </ModalBody>
-            <ModalFooter>
-                <Button Color="Color.Secondary"
-                        Clicked="CloseCreateModalAsync">
-                    @L["Cancel"]
-                </Button>
-                <Button Color="Color.Primary"
-                        Type="@ButtonType.Submit"
-                        PreventDefaultOnSubmit="true"
-                        Clicked="CreateEntityAsync">
-                    @L["Save"]
-                </Button>
-            </ModalFooter>
-        </Form>
-    </ModalContent>
-</Modal>
+                    </Validations>
+                </ModalBody>
+                <ModalFooter>
+                    <Button Color="Color.Secondary"
+                            Clicked="@CloseCreateModalAsync">
+                        @L["Cancel"]
+                    </Button>
+                    <Button Color="Color.Primary"
+                            Type="@ButtonType.Submit"
+                            PreventDefaultOnSubmit="true"
+                            Clicked="@CreateEntityAsync">
+                        @L["Save"]
+                    </Button>
+                </ModalFooter>
+            </Form>
+        </ModalContent>
+    </Modal>
+}
 
-
-                @*Edit Model*@
-
-
-<Modal @ref="@EditModal">
-    <ModalBackdrop />
-    <ModalContent IsCentered="true">
-        <Form>
-            <ModalHeader>
-                <ModalTitle>@EditingEntity.Name</ModalTitle>
-                <CloseButton Clicked="CloseEditModalAsync"/>
-            </ModalHeader>
-            <ModalBody>
-                <Validations @ref="@EditValidationsRef" Model="@NewEntity" ValidateOnLoad="false">
-                    <Validation MessageLocalizer="@LH.Localize">
+@if (EditModalRef is not null)
+{
+    <Modal @ref="@EditModalRef">
+        <ModalBackdrop />
+        <ModalContent IsCentered="true">
+            <Form>
+                <ModalHeader>
+                    <ModalTitle>@EditingEntity.Name</ModalTitle>
+                    <CloseButton Clicked="@CloseEditModalAsync" />
+                </ModalHeader>
+                <ModalBody>
+                    <Validations @ref="@EditValidationsRef" Model="@EditingEntity" ValidateOnLoad="false">
+                        <Validation MessageLocalizer="@LH.Localize">
+                            <Field>
+                                <FieldLabel>@L["Name"]</FieldLabel>
+                                <TextEdit @bind-Text="@EditingEntity.Name">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Field>
+                        </Validation>
                         <Field>
-                            <FieldLabel>@L["Name"]</FieldLabel>
-                            <TextEdit @bind-Text="@EditingEntity.Name">
-                                <Feedback>
-                                    <ValidationError/>
-                                </Feedback>
-                            </TextEdit>
-                        </Field>
-                    </Validation>
-                    <Field>
-                        <FieldLabel>@L["ProductType"]</FieldLabel>
-                        <Select TValue="ProductType" @bind-SelectedValue="@EditingEntity.productType">
-                            @foreach (var productTypeValue in Enum.GetValues(typeof(ProductType)))
-                            {
-                                <SelectItem TValue="ProductType" Value="@((ProductType)productTypeValue)">
-                                    @L[$"{productTypeValue}"]
+                            <FieldLabel>@L["ProductType"]</FieldLabel>
+                            <Select TValue="ProductType" @bind-SelectedValue="@EditingEntity.productType">
+                                @foreach (var productTypeValue in Enum.GetValues(typeof(ProductType)))
+                                {
+                                    <SelectItem TValue="ProductType" Value="@((ProductType)productTypeValue)">
+                                        @L[$"{productTypeValue}"]
 
-                                </SelectItem>
-                            }
-                        </Select>
-                    </Field>
-                    <Validation MessageLocalizer="@LH.Localize">
-                        <Field>
-                            <FieldLabel>@L["Description"]</FieldLabel>
-                            <TextEdit @bind-Text="@NewEntity.Description">
-                                <Feedback>
-                                    <ValidationError />
-                                </Feedback>
-                            </TextEdit>
+                                    </SelectItem>
+                                }
+                            </Select>
                         </Field>
-                    </Validation>
-                    
-                    <Field>
-                        <FieldLabel>@L["Price"]</FieldLabel>
-                        <NumericEdit TValue="float" @bind-Value="EditingEntity.Price"/>
-                    </Field>
-                </Validations>
-            </ModalBody>
-            <ModalFooter>
-                <Button Color="Color.Secondary"
-                        Clicked="CloseEditModalAsync">@L["Cancel"]</Button>
-                <Button Color="Color.Primary"
-                        Type="@ButtonType.Submit"
-                        PreventDefaultOnSubmit="true"
-                        Clicked="UpdateEntityAsync">@L["Save"]</Button>
-            </ModalFooter>
-        </Form>
-    </ModalContent>
-</Modal>
+                        <Validation MessageLocalizer="@LH.Localize">
+                            <Field>
+                                <FieldLabel>@L["Description"]</FieldLabel>
+                                <TextEdit @bind-Text="@EditingEntity.Description">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Field>
+                        </Validation>
+
+                        <Field>
+                            <FieldLabel>@L["Price"]</FieldLabel>
+                            <NumericEdit TValue="float" @bind-Value="@EditingEntity.Price" @bind-Value:event="oninput" />
+                        </Field>
+                    </Validations>
+                </ModalBody>
+                <ModalFooter>
+                    <Button Color="Color.Secondary"
+                            Clicked="@CloseEditModalAsync">@L["Cancel"]</Button>
+                    <Button Color="Color.Primary"
+                            Type="@ButtonType.Submit"
+                            PreventDefaultOnSubmit="true"
+                            Clicked="@UpdateEntityAsync">@L["Save"]</Button>
+                </ModalFooter>
+            </Form>
+        </ModalContent>
+    </Modal>
+}
+
+@code {
+    private DataGridEntityActionsColumn<ProductDto> EntityActionsColumn { get; set; }
+    private Modal CreateModalRef { get; set; }
+    private Modal EditModalRef { get; set; }
+    private Validations CreateValidationsRef { get; set; }
+    private Validations EditValidationsRef { get; set; }
+    private CreataUpdateProductDto NewEntity { get; set; } = new();
+    private CreataUpdateProductDto EditingEntity { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        NewEntity = new CreataUpdateProductDto();
+        EditingEntity = new CreataUpdateProductDto();
+    }
+
+    private async Task OpenCreateModalAsync()
+    {
+        CreateModalRef?.Show();
+    }
+
+    private async Task CloseCreateModalAsync()
+    {
+        CreateModalRef?.Hide();
+    }
+
+    private async Task CreateEntityAsync()
+    {
+        await CreateEntityAsync(NewEntity);
+        CreateModalRef?.Hide();
+    }
+
+    private async Task OpenEditModalAsync(ProductDto context)
+    {
+        EditingEntity = new CreataUpdateProductDto
+        {
+            Id = context.Id,
+            Name = context.Name,
+            Description = context.Description,
+            productType = context.productType,
+            Price = context.Price
+        };
+        EditModalRef?.Show();
+    }
+
+    private async Task CloseEditModalAsync()
+    {
+        EditModalRef?.Hide();
+    }
+
+    private async Task UpdateEntityAsync()
+    {
+        await UpdateEntityAsync(EditingEntity);
+        EditModalRef?.Hide();
+    }
+
+    private async Task<string> GetDeleteConfirmationMessage(ProductDto context)
+    {
+        return await JSRuntime.InvokeAsync<string>("confirm", $"Are you sure you want to delete {context.Name}?");
+    }
+}
