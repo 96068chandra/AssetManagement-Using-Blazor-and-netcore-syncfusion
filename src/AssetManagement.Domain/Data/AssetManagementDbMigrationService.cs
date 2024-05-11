@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Volo.Abp.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Identity;
@@ -40,7 +39,7 @@ public class AssetManagementDbMigrationService : ITransientDependency
 
     public async Task MigrateAsync()
     {
-        var initialMigrationAdded = AddInitialMigrationIfNotExist();
+        var initialMigrationAdded = await AddInitialMigrationIfNotExistAsync();
 
         if (initialMigrationAdded)
         {
@@ -106,11 +105,11 @@ public class AssetManagementDbMigrationService : ITransientDependency
         );
     }
 
-    private bool AddInitialMigrationIfNotExist()
+    private async Task<bool> AddInitialMigrationIfNotExistAsync()
     {
         try
         {
-            if (!DbMigrationsProjectExists())
+            if (!await DbMigrationsProjectExistsAsync())
             {
                 return false;
             }
@@ -122,9 +121,9 @@ public class AssetManagementDbMigrationService : ITransientDependency
 
         try
         {
-            if (!MigrationsFolderExists())
+            if (!await MigrationsFolderExistsAsync())
             {
-                AddInitialMigration();
+                await AddInitialMigrationAsync();
                 return true;
             }
             else
@@ -139,20 +138,22 @@ public class AssetManagementDbMigrationService : ITransientDependency
         }
     }
 
-    private bool DbMigrationsProjectExists()
+    private async Task<bool> DbMigrationsProjectExistsAsync()
     {
-        var dbMigrationsProjectFolder = GetEntityFrameworkCoreProjectFolderPath();
+        var dbMigrationsProjectFolder = await GetEntityFrameworkCoreProjectFolderPathAsync();
 
         return dbMigrationsProjectFolder != null;
     }
 
-    private bool MigrationsFolderExists()
+    private async Task<bool> MigrationsFolderExistsAsync()
     {
-        var dbMigrationsProjectFolder = GetEntityFrameworkCoreProjectFolderPath();
-        return dbMigrationsProjectFolder != null && Directory.Exists(Path.Combine(dbMigrationsProjectFolder, "Migrations"));
+        var dbMigrationsProjectFolder = await GetEntityFrameworkCoreProjectFolderPathAsync();
+        if (dbMigrationsProjectFolder == null) return false;
+
+        return await Directory.ExistsAsync(Path.Combine(dbMigrationsProjectFolder, "Migrations"));
     }
 
-    private void AddInitialMigration()
+    private async void AddInitialMigrationAsync()
     {
         Logger.LogInformation("Creating initial migration...");
 
@@ -171,12 +172,12 @@ public class AssetManagementDbMigrationService : ITransientDependency
         }
 
         var procStartInfo = new ProcessStartInfo(fileName,
-            $"{argumentPrefix} \"abp create-migration-and-run-migrator \"{GetEntityFrameworkCoreProjectFolderPath()}\"\""
+            $"{argumentPrefix} \"abp create-migration-and-run-migrator \"{await GetEntityFrameworkCoreProjectFolderPathAsync()}\""
         );
 
         try
         {
-            Process.Start(procStartInfo);
+            await Process.StartAsync(procStartInfo);
         }
         catch (Exception)
         {
@@ -184,9 +185,9 @@ public class AssetManagementDbMigrationService : ITransientDependency
         }
     }
 
-    private string? GetEntityFrameworkCoreProjectFolderPath()
+    private async Task<string?> GetEntityFrameworkCoreProjectFolderPathAsync()
     {
-        var slnDirectoryPath = GetSolutionDirectoryPath();
+        var slnDirectoryPath = await GetSolutionDirectoryPathAsync();
 
         if (slnDirectoryPath == null)
         {
@@ -195,11 +196,11 @@ public class AssetManagementDbMigrationService : ITransientDependency
 
         var srcDirectoryPath = Path.Combine(slnDirectoryPath, "src");
 
-        return Directory.GetDirectories(srcDirectoryPath)
+        return (await Directory.EnumerateDirectoriesAsync(srcDirectoryPath))
             .FirstOrDefault(d => d.EndsWith(".EntityFrameworkCore"));
     }
 
-    private string? GetSolutionDirectoryPath()
+    private async Task<string?> GetSolutionDirectoryPathAsync()
     {
         var currentDirectory = new DirectoryInfo(Directory.GetCurrentDirectory());
 
@@ -207,7 +208,7 @@ public class AssetManagementDbMigrationService : ITransientDependency
         {
             currentDirectory = Directory.GetParent(currentDirectory.FullName);
 
-            if (currentDirectory != null && Directory.GetFiles(currentDirectory.FullName).FirstOrDefault(f => f.EndsWith(".sln")) != null)
+            if (currentDirectory != null && (await Directory.EnumerateFilesAsync(currentDirectory.FullName)).FirstOrDefault(f => f.EndsWith(".sln")) != null)
             {
                 return currentDirectory.FullName;
             }
