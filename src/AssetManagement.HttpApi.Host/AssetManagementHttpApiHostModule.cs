@@ -21,7 +21,6 @@ using Volo.Abp.AspNetCore.MultiTenancy;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.Bundling;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared;
-using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
@@ -44,6 +43,15 @@ namespace AssetManagement;
 )]
 public class AssetManagementHttpApiHostModule : AbpModule
 {
+    private readonly string[] _corsOrigins;
+
+    public AssetManagementHttpApiHostModule(IConfiguration configuration)
+    {
+        _corsOrigins = configuration["App:CorsOrigins"]?.Split(",", StringSplitOptions.RemoveEmptyEntries)
+            .Select(o => o.RemovePostFix("/"))
+            .ToArray() ?? Array.Empty<string>();
+    }
+
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
         PreConfigure<OpenIddictBuilder>(builder =>
@@ -65,9 +73,8 @@ public class AssetManagementHttpApiHostModule : AbpModule
         ConfigureAuthentication(context);
         ConfigureBundles();
         ConfigureUrls(configuration);
-        ConfigureConventionalControllers();
         ConfigureVirtualFileSystem(context);
-        ConfigureCors(context, configuration);
+        ConfigureCors(context);
         ConfigureSwaggerServices(context, configuration);
     }
 
@@ -95,7 +102,7 @@ public class AssetManagementHttpApiHostModule : AbpModule
         Configure<AppUrlOptions>(options =>
         {
             options.Applications["MVC"].RootUrl = configuration["App:SelfUrl"];
-            options.RedirectAllowedUrls.AddRange(configuration["App:RedirectAllowedUrls"]?.Split(',') ?? Array.Empty<string>());
+            options.RedirectAllowedUrls.AddRange(_corsOrigins);
 
             options.Applications["Angular"].RootUrl = configuration["App:ClientUrl"];
             options.Applications["Angular"].Urls[AccountUrlNames.PasswordReset] = "account/reset-password";
@@ -126,11 +133,20 @@ public class AssetManagementHttpApiHostModule : AbpModule
         }
     }
 
-    private void ConfigureConventionalControllers()
+    private void ConfigureCors(ServiceConfigurationContext context)
     {
-        Configure<AbpAspNetCoreMvcOptions>(options =>
+        context.Services.AddCors(options =>
         {
-            options.ConventionalControllers.Create(typeof(AssetManagementApplicationModule).Assembly);
+            options.AddDefaultPolicy(builder =>
+            {
+                builder
+                    .WithOrigins(_corsOrigins)
+                    .WithAbpExposedHeaders()
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
         });
     }
 
@@ -148,26 +164,6 @@ public class AssetManagementHttpApiHostModule : AbpModule
                 options.DocInclusionPredicate((docName, description) => true);
                 options.CustomSchemaIds(type => type.FullName);
             });
-    }
-
-    private void ConfigureCors(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddCors(options =>
-        {
-            options.AddDefaultPolicy(builder =>
-            {
-                builder
-                    .WithOrigins(configuration["App:CorsOrigins"]?
-                        .Split(",", StringSplitOptions.RemoveEmptyEntries)
-                        .Select(o => o.RemovePostFix("/"))
-                        .ToArray() ?? Array.Empty<string>())
-                    .WithAbpExposedHeaders()
-                    .SetIsOriginAllowedToAllowWildcardSubdomains()
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
-            });
-        });
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
