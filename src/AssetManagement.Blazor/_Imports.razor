@@ -1,4 +1,5 @@
-﻿@using System.Net.Http
+@page "/example"
+@using System.Net.Http
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
@@ -6,9 +7,31 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.WebAssembly.Http
 @using Microsoft.JSInterop
+
 @using Volo.Abp.AspNetCore.Components.Web
 @using AssetManagement.Blazor
 @using Blazorise
 @using Blazorise.DataGrid
 @using Volo.Abp.BlazoriseUI
 @using Volo.Abp.BlazoriseUI.Components
+
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, @context.User.Identity.Name!</h1>
+        <p>Welcome to the Example Page.</p>
+        @* Add your content here *@
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private AuthenticationState context { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = await authenticationStateTask;
+    }
+}
