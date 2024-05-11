@@ -1,8 +1,9 @@
-﻿using Microsoft.Data.Sqlite;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using Volo.Abp;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.Sqlite;
@@ -11,66 +12,78 @@ using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.Uow;
 
-namespace AssetManagement.EntityFrameworkCore;
-
-[DependsOn(
-    typeof(AssetManagementEntityFrameworkCoreModule),
-    typeof(AssetManagementTestBaseModule),
-    typeof(AbpEntityFrameworkCoreSqliteModule)
-    )]
-public class AssetManagementEntityFrameworkCoreTestModule : AbpModule
+namespace AssetManagement.EntityFrameworkCore
 {
-    private SqliteConnection? _sqliteConnection;
-
-    public override void ConfigureServices(ServiceConfigurationContext context)
+    [DependsOn(
+        typeof(AssetManagementEntityFrameworkCoreModule),
+        typeof(AssetManagementTestBaseModule),
+        typeof(AbpEntityFrameworkCoreSqliteModule)
+        )]
+    public class AssetManagementEntityFrameworkCoreTestModule : AbpModule
     {
-        Configure<FeatureManagementOptions>(options =>
-        {
-            options.SaveStaticFeaturesToDatabase = false;
-            options.IsDynamicFeatureStoreEnabled = false;
-        });
-        Configure<PermissionManagementOptions>(options =>
-        {
-            options.SaveStaticPermissionsToDatabase = false;
-            options.IsDynamicPermissionStoreEnabled = false;
-        });
-        context.Services.AddAlwaysDisableUnitOfWorkTransaction();
+        private SqliteConnection? _sqliteConnection;
 
-        ConfigureInMemorySqlite(context.Services);
-    }
-
-    private void ConfigureInMemorySqlite(IServiceCollection services)
-    {
-        _sqliteConnection = CreateDatabaseAndGetConnection();
-
-        services.Configure<AbpDbContextOptions>(options =>
+        public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            options.Configure(context =>
+            Configure<FeatureManagementOptions>(options =>
             {
-                context.DbContextOptions.UseSqlite(_sqliteConnection);
+                options.SaveStaticFeaturesToDatabase = false;
+                options.IsDynamicFeatureStoreEnabled = false;
             });
-        });
-    }
+            Configure<PermissionManagementOptions>(options =>
+            {
+                options.SaveStaticPermissionsToDatabase = false;
+                options.IsDynamicPermissionStoreEnabled = false;
+            });
+            context.Services.AddAlwaysDisableUnitOfWorkTransaction();
 
-    public override void OnApplicationShutdown(ApplicationShutdownContext context)
-    {
-        _sqliteConnection?.Dispose();
-    }
-
-    private static SqliteConnection CreateDatabaseAndGetConnection()
-    {
-        var connection = new SqliteConnection("Data Source=:memory:");
-        connection.Open();
-
-        var options = new DbContextOptionsBuilder<AssetManagementDbContext>()
-            .UseSqlite(connection)
-            .Options;
-
-        using (var context = new AssetManagementDbContext(options))
-        {
-            context.GetService<IRelationalDatabaseCreator>().CreateTables();
+            ConfigureInMemorySqlite(context.Services);
         }
 
-        return connection;
+        private void ConfigureInMemorySqlite(IServiceCollection services)
+        {
+            _sqliteConnection = CreateDatabaseAndGetConnection();
+
+            services.Configure<AbpDbContextOptions>(options =>
+            {
+                options.Configure(context =>
+                {
+                    context.DbContextOptions.UseSqlite(_sqliteConnection);
+                });
+            });
+        }
+
+        public override void OnApplicationShutdown(ApplicationShutdownContext context)
+        {
+            if (_sqliteConnection != null)
+            {
+                _sqliteConnection.Dispose();
+            }
+        }
+
+        private static SqliteConnection CreateDatabaseAndGetConnection()
+        {
+            var connection = new SqliteConnection("Data Source=:memory:");
+            connection.Open();
+
+            try
+            {
+                var options = new DbContextOptionsBuilder<AssetManagementDbContext>()
+                    .UseSqlite(connection)
+                    .Options;
+
+                using (var context = new AssetManagementDbContext(options))
+                {
+                    context.GetService<IRelationalDatabaseCreator>().CreateTables();
+                }
+
+                return connection;
+            }
+            catch (Exception ex)
+            {
+                connection.Dispose();
+                throw;
+            }
+        }
     }
 }
