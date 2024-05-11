@@ -1,21 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\common.props" />
-
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <RootNamespace>AssetManagement</RootNamespace>
+    <RootNamespace>CompanyName.ProjectName</RootNamespace> <!-- Added a unique root namespace -->
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AssetManagement.EntityFrameworkCore\AssetManagement.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\AssetManagement.TestBase\AssetManagement.TestBase.csproj" />
-    <PackageReference Include="Volo.Abp.EntityFrameworkCore.Sqlite" Version="7.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore.Sqlite" Version="7.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+  </ItemGroup>
+
+  <!-- Added a new ItemGroup for better organization -->
+  <ItemGroup>
+    <IncludeInProject>false</IncludeInProject> <!-- Exclude common.props from this project -->
+    <Import Project="..\..\common.props" />
   </ItemGroup>
 
 </Project>
