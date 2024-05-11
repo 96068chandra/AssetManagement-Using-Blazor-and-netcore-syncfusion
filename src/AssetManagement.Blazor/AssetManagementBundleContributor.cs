@@ -1,19 +1,37 @@
-﻿using Volo.Abp.Bundling;
+using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp.Bundling;
+using Volo.Abp.Modularity;
 
-namespace AssetManagement.Blazor;
-
-/* Add your global styles/scripts here.
- * See https://docs.abp.io/en/abp/latest/UI/Blazor/Global-Scripts-Styles to learn how to use it
- */
-public class AssetManagementBundleContributor : IBundleContributor
+namespace AssetManagement.Blazor
 {
-    public void AddScripts(BundleContext context)
+    [DependsOn(typeof(AbpBundlingModule))]
+    public class AssetManagementBundleContributor : BundleContributorBase, ITransientDependency
     {
+        public AssetManagementBundleContributor(IBundleRegistry bundleRegistry) : base(bundleRegistry)
+        {
+        }
 
-    }
+        public override void ConfigureBundle(BundleConfigurationContext context)
+        {
+            context.Files.Add("main.css", true);
+            context.Files.Add("main.js", true);
+        }
 
-    public void AddStyles(BundleContext context)
-    {
-        context.Add("main.css", true);
+        protected override void OnConfigured(BundleConfigurationContext context)
+        {
+            if (context.BundleType == BundleType.Script)
+            {
+                context.Files.Add("vendor.js", true);
+            }
+        }
+
+        protected override void OnContributed(BundleContributionContext context)
+        {
+            if (context.BundleType == BundleType.Style)
+            {
+                context.Files.Add("vendor.css", true);
+            }
+        }
     }
 }
