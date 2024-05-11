@@ -1,8 +1,8 @@
-﻿namespace AssetManagement;
+namespace CompanyName.AssetManagement;
 
 public static class AssetManagementConsts
 {
-    public const string DbTablePrefix = "App";
+    public const string DbTablePrefix = "AssetManagement";
 
-    public const string DbSchema = null;
+    public const string DbSchema = "dbo";
 }
