@@ -1,56 +1,52 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
+using Autofac;
 
-namespace AssetManagement;
-
-public class Program
+namespace AssetManagement
 {
-    public async static Task<int> Main(string[] args)
+    public class Program
     {
-        Log.Logger = new LoggerConfiguration()
+        public static async Task<int> Main(string[] args)
+        {
+            Log.Logger = new LoggerConfiguration()
 #if DEBUG
-            .MinimumLevel.Debug()
+                .MinimumLevel.Debug()
 #else
-            .MinimumLevel.Information()
+                .MinimumLevel.Information()
 #endif
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
-            .Enrich.FromLogContext()
-            .WriteTo.Async(c => c.File("Logs/logs.txt"))
-            .WriteTo.Async(c => c.Console())
-            .CreateLogger();
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .WriteTo.Async(c => c.File("Logs/logs.txt"))
+                .WriteTo.Async(c => c.Console())
+                .CreateLogger();
 
-        try
-        {
-            Log.Information("Starting AssetManagement.HttpApi.Host.");
-            var builder = WebApplication.CreateBuilder(args);
-            builder.Host.AddAppSettingsSecretsJson()
-                .UseAutofac()
-                .UseSerilog();
-            await builder.AddApplicationAsync<AssetManagementHttpApiHostModule>();
-            var app = builder.Build();
-            await app.InitializeApplicationAsync();
-            await app.RunAsync();
-            return 0;
-        }
-        catch (Exception ex)
-        {
-            if (ex is HostAbortedException)
+            try
             {
-                throw;
+                Log.Information("Starting AssetManagement.HttpApi.Host.");
+                var builder = WebApplication.CreateBuilder(args);
+                if (builder.Host == null) throw new Exception("builder.Host is null");
+                builder.Host.AddAppSettingsSecretsJson()
+                    .UseAutofac(builder.Services)
+                    .UseSerilog();
+                if (builder.Services == null) throw new Exception("builder.Services is null");
+                await builder.Services.AddApplicationAsync<AssetManagementHttpApiHostModule>();
+                if (builder == null) throw new Exception("builder is null");
+                var app = builder.Build();
+                if (app == null) throw new Exception("app is null");
+                await app.InitializeApplicationAsync();
+                if (app.Lifetime == null) throw new Exception("app.Lifetime is null");
+                await app.Lifetime.RunAsync();
+                return 0;
             }
-
-            Log.Fatal(ex, "Host terminated unexpectedly!");
-            return 1;
-        }
-        finally
-        {
-            Log.CloseAndFlush();
-        }
-    }
-}
+            catch (Exception ex)
+            {
+                if (ex is HostAbortedException)
+                {
+                    throw;
+              
