@@ -1,35 +1,48 @@
-using Microsoft.Extensions.Hosting;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Volo.Abp;
+using Volo.Abp.Autofac;
+using Volo.Abp.Modularity;
 
 namespace AssetManagement.HttpApi.Client.ConsoleTestApp;
 
+[Deprecated(Reason = "Use AssetManagementConsoleApiClientModule instead.")]
 public class ConsoleTestAppHostedService : IHostedService
 {
     private readonly IConfiguration _configuration;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ConsoleTestAppHostedService(IConfiguration configuration)
+    public ConsoleTestAppHostedService(IConfiguration configuration, IServiceProvider serviceProvider)
     {
         _configuration = configuration;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using (var application = await AbpApplicationFactory.CreateAsync<AssetManagementConsoleApiClientModule>(options =>
+        try
         {
-           options.Services.ReplaceConfiguration(_configuration);
-           options.UseAutofac();
-        }))
+            using (var application = await AbpApplicationFactory.CreateAsync<AssetManagementConsoleApiClientModule>(options =>
+            {
+                options.Services.ReplaceConfiguration(_configuration);
+                options.UseAutofac();
+            }))
+            {
+                await application.InitializeAsync();
+
+                var demo = _serviceProvider.GetRequiredService<ClientDemoService>();
+                await demo.RunAsync();
+
+                await application.ShutdownAsync();
+            }
+        }
+        catch (Exception ex)
         {
-            await application.InitializeAsync();
-
-            var demo = application.ServiceProvider.GetRequiredService<ClientDemoService>();
-            await demo.RunAsync();
-
-            await application.ShutdownAsync();
+            Console.WriteLine($"An error occurred: {ex.Message}");
         }
     }
 
