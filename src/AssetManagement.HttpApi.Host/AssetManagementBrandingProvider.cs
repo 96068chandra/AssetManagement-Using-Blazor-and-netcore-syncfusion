@@ -1,4 +1,4 @@
-﻿using Volo.Abp.DependencyInjection;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.Ui.Branding;
 
 namespace AssetManagement;
@@ -6,5 +6,10 @@ namespace AssetManagement;
 [Dependency(ReplaceServices = true)]
 public class AssetManagementBrandingProvider : DefaultBrandingProvider
 {
-    public override string AppName => "AssetManagement";
+    public AssetManagementBrandingProvider()
+    {
+        AppName = "AssetManagement";
+    }
+
+    public override string AppName { get; }
 }
