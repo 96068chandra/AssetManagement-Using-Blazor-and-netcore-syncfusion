@@ -1,9 +1,30 @@
-﻿namespace AssetManagement.Settings;
+using System;
 
-public static class AssetManagementSettings
+namespace AssetManagement.Settings
 {
-    private const string Prefix = "AssetManagement";
+    public static class AssetManagementSettings
+    {
+        private const string Prefix = "AssetManagement.";
 
-    //Add your own setting names here. Example:
-    //public const string MySetting1 = Prefix + ".MySetting1";
+        public static string GetSetting(string name)
+        {
+            return GetSetting(Prefix + name);
+        }
+
+        public static void SetSetting(string name, string value)
+        {
+            SetSetting(Prefix + name, value);
+        }
+
+        public static string GetSetting(string name, string defaultValue)
+        {
+            return ConfigurationManager.AppSettings.Get(name) ?? defaultValue;
+        }
+
+        public static void SetSetting(string name, string value)
+        {
+            ConfigurationManager.AppSettings[name] = value;
+            ConfigurationManager.Save();
+        }
+    }
 }
