@@ -1,20 +1,15 @@
-﻿using Shouldly;
+using Shouldly;
 using System.Threading.Tasks;
-using Volo.Abp.Identity;
+using AssetManagement.Identity;
 using Xunit;
 
-namespace AssetManagement.Samples;
+namespace AssetManagement.Tests;
 
-/* This is just an example test class.
- * Normally, you don't test code of the modules you are using
- * (like IIdentityUserAppService here).
- * Only test your own application services.
- */
-public class SampleAppServiceTests : AssetManagementApplicationTestBase
+public class IdentityAppServiceTests : AssetManagementApplicationTestBase
 {
     private readonly IIdentityUserAppService _userAppService;
 
-    public SampleAppServiceTests()
+    public IdentityAppServiceTests()
     {
         _userAppService = GetRequiredService<IIdentityUserAppService>();
     }
@@ -27,6 +22,6 @@ public class SampleAppServiceTests : AssetManagementApplicationTestBase
 
         //Assert
         result.TotalCount.ShouldBeGreaterThan(0);
-        result.Items.ShouldContain(u => u.UserName == "admin");
+        result.Items.ShouldContain(user => user.UserName == "admin");
     }
 }
