@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Volo.Abp.Autofac;
@@ -19,12 +19,14 @@ public class AssetManagementConsoleApiClientModule : AbpModule
     {
         PreConfigure<AbpHttpClientBuilderOptions>(options =>
         {
-            options.ProxyClientBuildActions.Add((remoteServiceName, clientBuilder) =>
-            {
-                clientBuilder.AddTransientHttpErrorPolicy(
-                    policyBuilder => policyBuilder.WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(Math.Pow(2, i)))
-                );
-            });
+            options.ProxyClientBuildActions.Add(ConfigureHttpErrorPolicy);
         });
+    }
+
+    private static void ConfigureHttpErrorPolicy(string remoteServiceName, IHttpClientBuilder clientBuilder)
+    {
+        clientBuilder.AddTransientHttpErrorPolicy(
+            policyBuilder => policyBuilder.WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(Math.Pow(2, i)))
+        );
     }
 }
