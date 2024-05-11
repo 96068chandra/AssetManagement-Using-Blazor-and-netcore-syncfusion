@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\common.props" />
-
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <RootNamespace>AssetManagement</RootNamespace>
+    <RootNamespace>CompanyName.ProjectName</RootNamespace>
+    <Title>Asset Management</Title>
+    <Description>A project for managing assets.</Description>
+    <Authors>Author Name</Authors>
+    <Company>Company Name</Company>
+    <Product>Asset Management</Product>
   </PropertyGroup>
+
+  <Import Project="..\..\common.props" />
 
   <ItemGroup>
     <ProjectReference Include="..\AssetManagement.Application.Contracts\AssetManagement.Application.Contracts.csproj" />
