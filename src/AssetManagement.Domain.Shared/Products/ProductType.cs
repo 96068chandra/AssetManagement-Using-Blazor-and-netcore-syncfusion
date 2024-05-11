@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace AssetManagement.Products;
-public enum ProductType
+namespace AssetManagement.Products
 {
-    Mobiles,
-    Earphones,
-    PowerBanks,
-    Undefined
-
+    public enum ProductType
+    {
+        Mobile,
+        Earphone,
+        PowerBank,
+        Undefined
+    }
 }
-
