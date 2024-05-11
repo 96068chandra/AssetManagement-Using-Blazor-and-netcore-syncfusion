@@ -1,71 +1,82 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Xunit;
-using Volo.Abp.Application.Dtos;
+using AssetManagement.Products;
 using Shouldly;
+using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Validation;
+using Xunit;
 
-namespace AssetManagement.Products
+namespace AssetManagement.Tests.Products
 {
-    public class AssetManagementService_Tests:AssetManagementApplicationTestBase
+    public class AssetManagementService_Tests : AbpApplicationTestBase
     {
         private readonly IProductAppService _productAppService;
+
         public AssetManagementService_Tests()
         {
-              _productAppService=GetRequiredService<IProductAppService>();
-            
+            _productAppService = GetRequiredService<IProductAppService>();
         }
-        [Fact]
 
+        [Fact]
         public async Task Should_Get_List_Of_Products()
         {
-            var result = await _productAppService.GetListAsync(
-                new PagedAndSortedResultRequestDto()
-                ) ;
+            // Arrange
+            var request = new PagedAndSortedResultRequestDto();
 
-            //Assert
+            // Act
+            var result = await _productAppService.GetListAsync(request);
+
+            // Assert
             result.TotalCount.ShouldBeGreaterThan(0);
             result.Items.ShouldContain(p => p.Name == "Realme");
         }
 
-
         [Fact]
         public async Task Should_create_a_valid_product()
         {
-            var result = await _productAppService.CreateAsync(
-                new CreataUpdateProductDto
-                {
-                    Name = "Oppo10A",
-                    productType = ProductType.Mobiles,
-                    Description = "Mobile Phone",
-                    Price = 20000
+            // Arrange
+            var productDto = new CreateUpdateProductDto
+            {
+                Name = "Oppo10A",
+                ProductType = ProductType.Mobiles,
+                Description = "Mobile Phone",
+                Price = 20000
+            };
 
+            // Act
+            var result = await _productAppService.CreateAsync(productDto);
 
-
-                });
-
+            // Assert
             result.Id.ShouldNotBe(Guid.Empty);
-            result.Name.ShouldBe("Oppo10A");
+            result.Name.ShouldBe(productDto.Name);
         }
 
         [Fact]
-        public async Task Should_Not_Create_A_Book_Without_Name()
+        public async Task Should_Not_Create_A_Product_Without_Name()
         {
-            var exception = await Assert.ThrowsAsync<AbpValidationException>(async () =>
+            // Arrange
+            var productDto = new CreateUpdateProductDto
             {
-                await _productAppService.CreateAsync(
-                    new CreataUpdateProductDto
-                    {
-                        Name="",
-                        productType = ProductType.Mobiles,
-                        Description="Mobile Phone",
-                        Price=35000
-                    });
+                Name = "",
+                ProductType = ProductType.Mobiles,
+                Description = "Mobile Phone",
+                Price = 35000
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<AbpValidationException>(async () =>
+            {
+                await _productAppService.CreateAsync(productDto);
             });
-            exception.ValidationErrors.ShouldContain(err => err.MemberNames.Any(mem => mem == "Name"));
+
+            // Assert
+            using var assertionScope = ShouldlyShould.Should(this);
+            assertionScope.ShouldSatisfyAllConditions(
+                () => assertionScope.ShouldNotBeNull(),
+                () => assertionScope.Items.ShouldContain(err => err.MemberNames.Any(mem => mem == "Name")));
         }
     }
 }
