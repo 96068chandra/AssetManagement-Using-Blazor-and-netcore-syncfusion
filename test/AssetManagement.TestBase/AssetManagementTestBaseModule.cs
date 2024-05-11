@@ -1,25 +1,24 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 using Volo.Abp;
-using Volo.Abp.Authorization;
 using Volo.Abp.Autofac;
 using Volo.Abp.BackgroundJobs;
 using Volo.Abp.Data;
 using Volo.Abp.Modularity;
-using Volo.Abp.Threading;
 
 namespace AssetManagement;
 
 [DependsOn(
     typeof(AbpAutofacModule),
-    typeof(AbpTestBaseModule),
+    typeof(AbpBackgroundJobsModule),
     typeof(AbpAuthorizationModule),
+    typeof(AbpTestBaseModule),
     typeof(AssetManagementDomainModule)
     )]
 public class AssetManagementTestBaseModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
-
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -29,24 +28,25 @@ public class AssetManagementTestBaseModule : AbpModule
             options.IsJobExecutionEnabled = false;
         });
 
+        Configure<AbpDbConnectionOptions>(options =>
+        {
+            options.UseSqlite("Data Source=test;");
+        });
+
         context.Services.AddAlwaysAllowAuthorization();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        SeedTestData(context);
+        SeedTestData(context).GetAwaiter().GetResult();
     }
 
-    private static void SeedTestData(ApplicationInitializationContext context)
+    private async Task SeedTestData(ApplicationInitializationContext context)
     {
-        AsyncHelper.RunSync(async () =>
+        using (var scope = context.ServiceProvider.CreateScope())
         {
-            using (var scope = context.ServiceProvider.CreateScope())
-            {
-                await scope.ServiceProvider
-                    .GetRequiredService<IDataSeeder>()
-                    .SeedAsync();
-            }
-        });
+            var dataSeeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
+            await dataSeeder.SeedAsync();
+        }
     }
 }
