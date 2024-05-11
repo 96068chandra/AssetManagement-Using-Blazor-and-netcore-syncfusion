@@ -1,15 +1,10 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Shouldly;
 using Volo.Abp.Identity;
 using Xunit;
 
 namespace AssetManagement.Samples;
 
-/* This is just an example test class.
- * Normally, you don't test code of the modules you are using
- * (like IdentityUserManager here).
- * Only test your own domain services.
- */
 public class SampleDomainTests : AssetManagementDomainTestBase
 {
     private readonly IIdentityUserRepository _identityUserRepository;
@@ -24,21 +19,24 @@ public class SampleDomainTests : AssetManagementDomainTestBase
     [Fact]
     public async Task Should_Set_Email_Of_A_User()
     {
-        IdentityUser adminUser;
+        // Use a variable name that describes what it is, not how it's used
+        IdentityUser adminUser = await _identityUserRepository
+            .FindByNormalizedUserNameAsync("ADMIN");
 
-        /* Need to manually start Unit Of Work because
-         * FirstOrDefaultAsync should be executed while db connection / context is available.
-         */
-        await WithUnitOfWorkAsync(async () =>
+        // Use a variable name that describes what it is, not how it's used
+        string newEmail = "newemail@abp.io";
+
+        // Use a using block to ensure the Unit Of Work is disposed of properly
+        using (var uow = UnitOfWorkManager.Begin())
         {
-            adminUser = await _identityUserRepository
-                .FindByNormalizedUserNameAsync("ADMIN");
-
-            await _identityUserManager.SetEmailAsync(adminUser, "newemail@abp.io");
+            await _identityUserManager.SetEmailAsync(adminUser, newEmail);
             await _identityUserRepository.UpdateAsync(adminUser);
-        });
+
+            // Commit the Unit Of Work after all changes have been made
+            await uow.CompleteAsync();
+        }
 
         adminUser = await _identityUserRepository.FindByNormalizedUserNameAsync("ADMIN");
-        adminUser.Email.ShouldBe("newemail@abp.io");
+        adminUser.Email.ShouldBe(newEmail);
     }
 }
