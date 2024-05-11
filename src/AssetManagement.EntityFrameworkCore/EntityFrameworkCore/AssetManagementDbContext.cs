@@ -1,9 +1,10 @@
-﻿using AssetManagement.Products;
+using AssetManagement.Products;
+using AssetManagement.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Volo.Abp;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
-using Volo.Abp.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.FeatureManagement.EntityFrameworkCore;
 using Volo.Abp.Identity;
@@ -13,13 +14,9 @@ using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.TenantManagement.EntityFrameworkCore;
-using AssetManagement.Products;
-using Volo.Abp.EntityFrameworkCore.Modeling;
 
-namespace AssetManagement.EntityFrameworkCore;
+namespace AssetManagement.DbContext;
 
-[ReplaceDbContext(typeof(IIdentityDbContext))]
-[ReplaceDbContext(typeof(ITenantManagementDbContext))]
 [ConnectionStringName("Default")]
 public class AssetManagementDbContext :
     AbpDbContext<AssetManagementDbContext>,
@@ -54,7 +51,8 @@ public class AssetManagementDbContext :
     public DbSet<TenantConnectionString> TenantConnectionStrings { get; set; }
 
     #endregion
-    public DbSet<Product> products { get; set; }
+    public DbSet<Product> Products { get; set; }
+
     public AssetManagementDbContext(DbContextOptions<AssetManagementDbContext> options)
         : base(options)
     {
