@@ -6,18 +6,15 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <CopyFilesToPublishDirectory>PreserveNewest</CopyFilesToPublishDirectory>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="appsettings.json" />
     <Content Include="appsettings.json">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>
-    <None Remove="appsettings.secrets.json" />
     <Content Include="appsettings.secrets.json">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 
@@ -35,11 +32,8 @@
     <ProjectReference Include="..\AssetManagement.EntityFrameworkCore\AssetManagement.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Logs\**" />
-    <Content Remove="Logs\**" />
-    <EmbeddedResource Remove="Logs\**" />
-    <None Remove="Logs\**" />
-  </ItemGroup>
+  <Target Name="CleanLogs" BeforeTargets="Build">
+    <Delete Files="$(OutputPath)Logs\" />
+  </Target>
 
 </Project>
